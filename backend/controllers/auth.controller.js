@@ -64,7 +64,8 @@ export const getSignin = async (req, res) => {
         email: existingUser.email,
         verified: existingUser.verified,
       },
-      process.env.TOKEN_SECRET
+      process.env.TOKEN_SECRET,
+      { expiresIn: "7d" }
     );
     console.log(token);
     res
@@ -78,6 +79,11 @@ export const getSignin = async (req, res) => {
         token,
         message: "Login success!",
       });
+    res.cookie("Authorization", "Bearer " + token, {
+      expires: new Date(Date.now() + 8 * 3600000),
+      httpOnly: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server Error!" });
