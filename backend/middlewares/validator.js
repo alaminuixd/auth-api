@@ -45,3 +45,12 @@ export const demoSchema = Joi.object({
     .required()
     .email({ tlds: { allow: ["com", "org"] } }),
 });
+
+export const acceptCodeSchema = Joi.object({
+  email: Joi.string()
+    .min(6)
+    .max(60)
+    .required()
+    .email({ tlds: { allow: ["com", "org"] } }),
+  providedCode: Joi.number().required(),
+});
