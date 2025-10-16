@@ -19,6 +19,7 @@ export const signupSchema = Joi.object({
       "string.empty": "Password is required",
     }),
 });
+
 export const signinSchema = Joi.object({
   email: Joi.string()
     .min(6)
