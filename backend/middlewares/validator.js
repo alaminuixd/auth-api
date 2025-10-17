@@ -5,9 +5,8 @@ export const signupSchema = Joi.object({
     .min(6)
     .max(60)
     .required()
-    .email({ tlds: { allow: ["com", "net"] } }),
+    .email({ tlds: { allow: ["com", "net", "org", "io"] } }),
   password: Joi.string()
-    .required()
     .pattern(
       new RegExp(
         "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"

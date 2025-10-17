@@ -14,7 +14,7 @@ export const createSignup = async (req, res) => {
     const { email, password } = req.body;
     const { error, value } = signupSchema.validate({ email, password });
     if (error) {
-      // error = { "details": [{"message": "\"email\" is required", "others"}]}
+      // error = { "details": [{"message": "\"email\" is required", "others"}, ]}
       return res
         .status(400)
         .json({ success: false, message: error.details[0].message });
