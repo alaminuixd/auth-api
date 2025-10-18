@@ -8,6 +8,7 @@ import { doHash, doHashValidation, hmacProcess } from "../utils/hashing.js";
 import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config/env.js";
 import { transport } from "../middlewares/send.mail.js";
+import { hmacProcess } from "./../utils/hashing";
 
 export const createSignup = async (req, res) => {
   try {
@@ -164,6 +165,30 @@ export const verifyVerificationCode = async (req, res) => {
   ) {
     return res.status(400).json({ success: false, message: "Something wrong" });
   }
+  if (Date.now() - existingUser.verificationCodeValidation > 5 * 60 * 1000) {
+    return res
+      .status(400)
+      .json({ success: false, message: "The code is expaired!" });
+  }
+
+  const hashCodedValue = hmacProcess(
+    codeValue,
+    process.env.HMAC_VERIFICATION_CODE_SECRET
+  );
+  if (hashCodedValue === existingUser.verificationCode) {
+    existingUser.verified = true;
+    existingUser.verificationCode = undefined;
+    existingUser.verificationCodeValidation = undefined;
+    existingUser.save();
+    return res
+      .status(200)
+      .json({ success: true, message: "Your account has been verified!" });
+  }
+  res.status(400).json({ success: true, message: "Invalid verification code" });
   try {
-  } catch (error) {}
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error: " + error.message });
+  }
 };
