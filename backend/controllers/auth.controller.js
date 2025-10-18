@@ -148,6 +148,22 @@ export const verifyVerificationCode = async (req, res) => {
       .status(400)
       .json({ success: false, message: error.details[0].message });
   }
+  const codeValue = providedCode.toString();
+  const existingUser = User.findOne({ email });
+  if (!existingUser) {
+    return res.status(404).json({ success: false, message: "User not found!" });
+  }
+  if (existingUser.verified) {
+    return res
+      .status(403)
+      .json({ success: false, message: "You are alreday verified" });
+  }
+  if (
+    !existingUser.verificationCode ||
+    !existingUser.verificationCodeValidation
+  ) {
+    return res.status(400).json({ success: false, message: "Something wrong" });
+  }
   try {
   } catch (error) {}
 };
