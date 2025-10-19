@@ -1,14 +1,17 @@
-import { compare, hash } from "bcryptjs";
-import { createHmac } from "crypto";
+import { hash, compare } from "bcryptjs";
 
-export const doHash = (value, saltValue) => {
-  return hash(value, saltValue);
+export const doHash = async (value, salt = 10) => {
+  try {
+    return await hash(value, salt);
+  } catch (error) {
+    throw new Error(`Hashing failed. Error: ${error}`);
+  }
 };
 
-export const doHashValidation = (value, hashedValue) => {
-  return compare(value, hashedValue);
-};
-
-export const hmacProcess = (value, key) => {
-  return createHmac("sha256", key).update(value).digest("hex");
+export const doHashValidation = async (value, hashedValue) => {
+  try {
+    return await compare(value, hashedValue);
+  } catch (error) {
+    throw new Error(`Hashing comparison failed. Error: ${error}`);
+  }
 };

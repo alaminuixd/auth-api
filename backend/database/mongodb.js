@@ -1,18 +1,11 @@
 import mongoose from "mongoose";
-import { DB_URI, NODE_ENV } from "../config/env.js";
-if (!DB_URI) {
-  throw new Error("Please provide DB_URI environment variable");
-}
-if (!NODE_ENV) {
-  throw new Error("Please provide NODE_ENV");
-}
-const connectToDatabase = async () => {
+
+export const connectDB = async () => {
   try {
-    await mongoose.connect(DB_URI);
-    console.log(`Connected to the Database ${NODE_ENV} mode`);
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("✅ MongoDB connected successfully!");
   } catch (error) {
-    console.error("Error connecting to Database", error);
-    process.exit(1);
+    console.error("❌ MongoDB connection failed:", error.message);
+    process.exit(1); // stop server if connection fails
   }
 };
-export default connectToDatabase;
