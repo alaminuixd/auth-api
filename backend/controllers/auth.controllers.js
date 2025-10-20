@@ -5,7 +5,6 @@ import {
   TOKEN_SECRET,
   NODE_ENV,
   EMAIL_USER,
-  EMAIL_PASS,
   HMAC_SECRET,
 } from "../config/env.js";
 import { transport } from "../middlewares/send.mail.js";
@@ -13,6 +12,7 @@ import {
   sendCodeSchema,
   signinSchema,
   signupSchema,
+  acceptCodeSchema,
 } from "../middlewares/auth.schemas.js";
 
 // ************************ ROUTES ************************************
@@ -123,6 +123,7 @@ export const sendVerificationCode = async (req, res) => {
       subject: "Mail verification code!",
       html: `<h1>${codeValue}</h1>`,
     });
+
     console.log(mailRes);
     if (mailRes.accepted && mailRes.accepted.includes(existingUser.email)) {
       const hashedCodeValue = processHmac(codeValue, HMAC_SECRET);
@@ -134,6 +135,50 @@ export const sendVerificationCode = async (req, res) => {
     res.status(400).json({ message: "Code sent failed!" });
   } catch (error) {
     res.status(500).json({ message: "Server Error!", error: error.message });
+  }
+};
+
+export const verifyVerificationCode = async (req, res) => {
+  const { email, code } = req.body;
+  try {
+    const { error, value } = acceptCodeSchema.validate({ email, code });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    const codeValue = code.toString();
+    const existingUser = await User.findOne({ email }).select(
+      "+emailVerificationToken +emailVerificationExpires"
+    );
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+    if (existingUser.isEmailVerified) {
+      return res.status(403).json({ message: "You are already verified!" });
+    }
+    if (
+      !existingUser.emailVerificationToken ||
+      !existingUser.emailVerificationExpires
+    ) {
+      return res
+        .status(400)
+        .json({ message: "something wrong with the code." });
+    }
+    if (Date.now() - existingUser.emailVerificationExpires > 5 * 600 * 1000) {
+      return res.status(400).json({ message: "The code is expired!" });
+    }
+    const hashedCode = processHmac(codeValue, HMAC_SECRET);
+    if (hashedCode === existingUser.emailVerificationToken) {
+      existingUser.isEmailVerified = true;
+      existingUser.emailVerificationToken = undefined;
+      existingUser.emailVerificationExpires = undefined;
+      await existingUser.save();
+      return res
+        .status(200)
+        .json({ message: "Your account has been verified" });
+    }
+    res.status(400).json({ message: "Invalid code!" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error: " + error.message });
   }
 };
 

@@ -44,7 +44,7 @@ export const sendCodeSchema = Joi.object({
 
 export const acceptCodeSchema = Joi.object({
   email: emailField,
-  providedCode: Joi.number().required().messages({
+  code: Joi.number().required().messages({
     "number.base": "Code must be a number",
     "any.required": "Code is required",
   }),
