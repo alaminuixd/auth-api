@@ -66,7 +66,7 @@ export const signin = async (req, res) => {
     const payload = {
       id: existingUser._id,
       email: existingUser.email,
-      isEmailVerified: existingUser.isEmailVerified,
+      emailVerified: existingUser.emailVerified,
     };
 
     const token = jwt.sign(payload, TOKEN_SECRET, { expiresIn: "5h" });
@@ -109,7 +109,7 @@ export const sendVerificationCode = async (req, res) => {
     if (!existingUser) {
       return res.status(401).json({ message: "Invalid user!" });
     }
-    if (existingUser.isEmailVerified) {
+    if (existingUser.emailVerified) {
       return res.status(403).json({ message: "You are already verified!" });
     }
     // prepare code to be sent to the mail
@@ -152,7 +152,7 @@ export const verifyVerificationCode = async (req, res) => {
     if (!existingUser) {
       return res.status(404).json({ message: "User not found!" });
     }
-    if (existingUser.isEmailVerified) {
+    if (existingUser.emailVerified) {
       return res.status(403).json({ message: "You are already verified!" });
     }
     if (
@@ -168,7 +168,7 @@ export const verifyVerificationCode = async (req, res) => {
     }
     const hashedCode = processHmac(codeValue, HMAC_SECRET);
     if (hashedCode === existingUser.emailVerificationToken) {
-      existingUser.isEmailVerified = true;
+      existingUser.emailVerified = true;
       existingUser.emailVerificationToken = undefined;
       existingUser.emailVerificationExpires = undefined;
       await existingUser.save();
@@ -180,6 +180,18 @@ export const verifyVerificationCode = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Server error: " + error.message });
   }
+};
+
+export const vvc = async () => {
+  const { email, code } = req.body;
+  try {
+    const { error, value } = acceptCodeSchema.validate({ email, code });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    const codeValue = code.toString();
+    const existingUser = await User.findOne({ email });
+  } catch (error) {}
 };
 
 export const readCookie = async (req, res) => {

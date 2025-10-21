@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
       minLength: [8, "Password must be at least 8 characters long"],
       maxLength: [1024, "Password can't exceed 1024 characters"],
     },
-    isEmailVerified: {
+    emailVerified: {
       type: Boolean,
       default: false,
     },
