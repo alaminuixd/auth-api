@@ -22,7 +22,7 @@ PERSONAL.README.md
 
 # Local env files
 *.local
-.env
+backend/.env
 
 # Editor stuff
 .vscode/*
