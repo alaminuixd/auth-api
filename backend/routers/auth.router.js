@@ -1,16 +1,25 @@
 import { Router } from "express";
 import {
-  createSignup,
-  getSignin,
-  getSignout,
+  signup,
+  signin,
+  signout,
   sendVerificationCode,
-} from "../controllers/auth.controller.js";
+  verifyVerificationCode,
+  changePassword,
+} from "../controllers/auth.controllers.js";
+import { identifier } from "../middlewares/identification.js";
 
 const authRouter = Router();
 
-authRouter.post("/signup", createSignup);
-authRouter.post("/signin", getSignin);
-authRouter.post("/signout", getSignout);
-authRouter.patch("/send-verification-code", sendVerificationCode);
+authRouter.post("/signup", signup);
+authRouter.post("/signin", signin);
+authRouter.post("/signout", identifier, signout);
+authRouter.patch("/send-varification-code", identifier, sendVerificationCode);
+authRouter.patch(
+  "/verify-varification-code",
+  identifier,
+  verifyVerificationCode
+);
+authRouter.patch("/change-password", identifier, changePassword);
 
 export default authRouter;

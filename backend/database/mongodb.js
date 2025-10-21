@@ -6,6 +6,7 @@ if (!DB_URI) {
 if (!NODE_ENV) {
   throw new Error("Please provide NODE_ENV");
 }
+
 const connectToDatabase = async () => {
   try {
     await mongoose.connect(DB_URI);
@@ -15,4 +16,5 @@ const connectToDatabase = async () => {
     process.exit(1);
   }
 };
+
 export default connectToDatabase;
