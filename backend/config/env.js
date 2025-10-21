@@ -1,8 +1,8 @@
 export const {
   PORT,
+  NODE_ENV,
   MONGO_URI,
   TOKEN_SECRET,
-  NODE_ENV,
   EMAIL_USER,
   EMAIL_PASS,
   HMAC_SECRET,
