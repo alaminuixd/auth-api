@@ -9,19 +9,26 @@ import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config/env.js";
 
 export const verifyToken = async (req, res, next) => {
-  let token =
+  // Determine source: browser or API client
+  const rawToken =
     req.headers.client === "not-browser"
       ? req.headers.authorization
       : req.cookies["Authorization"];
-  if (!token) {
+
+  if (!rawToken) {
     return res.status(401).json({ message: "Unauthorized!" });
   }
+
   try {
-    const userToken = token.split(" ")[1];
-    // "jwt.verify()" returns the decoded "payload" of the "token"
-    const jwtVerified = jwt.verify(userToken, TOKEN_SECRET);
-    // here we added that "payload" to a new "req" property "user"
-    req.user = jwtVerified;
+    // Remove "Bearer " prefix if present
+    const token = rawToken.split(" ")[1];
+
+    // Verify and decode token
+    const decodedToken = jwt.verify(token, TOKEN_SECRET);
+
+    // Attach decoded payload to request
+    req.user = decodedToken;
+
     next();
   } catch (error) {
     res.status(401).json({ message: "Invalid token" });

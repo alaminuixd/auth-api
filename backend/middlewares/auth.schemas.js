@@ -27,6 +27,11 @@ const passwordField = Joi.string()
     "string.max": "Password cannot exceed 128 characters",
   });
 
+const codeField = Joi.number().required().messages({
+  "number.base": "Code must be a number",
+  "any.required": "Code is required",
+});
+
 // 📌 Auth Schemas
 export const signupSchema = Joi.object({
   email: emailField,
@@ -44,13 +49,16 @@ export const sendCodeSchema = Joi.object({
 
 export const acceptCodeSchema = Joi.object({
   email: emailField,
-  code: Joi.number().required().messages({
-    "number.base": "Code must be a number",
-    "any.required": "Code is required",
-  }),
+  code: codeField,
 });
 
 export const changePasswordSchema = Joi.object({
   oldPassword: passwordField,
+  newPassword: passwordField,
+});
+
+export const verifyForgetPasswordSchema = Joi.object({
+  email: emailField,
+  providedCode: codeField,
   newPassword: passwordField,
 });

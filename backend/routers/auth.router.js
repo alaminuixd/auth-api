@@ -3,9 +3,11 @@ import {
   signup,
   signin,
   signout,
-  readCookie,
   sendVerificationCode,
   verifyVerificationCode,
+  changePassword,
+  sendForgetPasswordCode,
+  verifyForgetPasswordCode,
 } from "../controllers/auth.controllers.js";
 import { verifyToken } from "../middlewares/verify.token.js";
 
@@ -20,6 +22,8 @@ authRouter.patch(
   verifyToken,
   verifyVerificationCode
 );
-authRouter.get("/redcookie", verifyToken, readCookie);
+authRouter.patch("/change-password", verifyToken, changePassword);
+authRouter.patch("/forget-password", sendForgetPasswordCode);
+authRouter.patch("/verify-password-code", verifyForgetPasswordCode);
 
 export default authRouter;

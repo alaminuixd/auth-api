@@ -35,6 +35,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    forgotPasswordToken: {
+      type: String,
+      select: false,
+    },
+    forgotPasswordExpires: {
+      type: String,
+      select: false,
+    },
   },
   { timestamps: true }
 );

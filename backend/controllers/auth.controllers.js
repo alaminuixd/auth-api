@@ -13,6 +13,8 @@ import {
   signinSchema,
   signupSchema,
   acceptCodeSchema,
+  changePasswordSchema,
+  verifyForgetPasswordSchema,
 } from "../middlewares/auth.schemas.js";
 
 // ************************ ROUTES ************************************
@@ -73,7 +75,7 @@ export const signin = async (req, res) => {
 
     res
       .cookie("Authorization", `Bearer ${token}`, {
-        expiresIn: new Date(Date.now() + 8 * 3600000),
+        expires: new Date(Date.now() + 8 * 3600000), // 8 hours
         httpOnly: NODE_ENV === "production",
         secure: NODE_ENV === "production",
         sameSite: "Strict",
@@ -85,6 +87,7 @@ export const signin = async (req, res) => {
 };
 export const signout = async (req, res) => {
   try {
+    console.log(req.user);
     res
       .clearCookie("Authorization", {
         httpOnly: NODE_ENV === "production",
@@ -116,7 +119,7 @@ export const sendVerificationCode = async (req, res) => {
     const codeValue = Math.floor(Math.random() * 1000000)
       .toString()
       .padStart(6, "0");
-    // return {  accepted: ['recipient@example.com'], rejected: [],  envelopeTime: 123, ....}
+    // return {  accepted: ['recipient@example.com'], rejected: [], ....}
     const mailRes = await transport.sendMail({
       from: EMAIL_USER,
       to: email,
@@ -128,7 +131,10 @@ export const sendVerificationCode = async (req, res) => {
     if (mailRes.accepted && mailRes.accepted.includes(existingUser.email)) {
       const hashedCodeValue = processHmac(codeValue, HMAC_SECRET);
       existingUser.emailVerificationToken = hashedCodeValue;
-      existingUser.emailVerificationExpires = new Date();
+      existingUser.emailVerificationExpires = new Date(
+        Date.now() + 5 * 60 * 1000
+      );
+      existingUser.emailVerificationExpires = Date.now() + 5 * 60 * 1000;
       await existingUser.save();
       return res.status(200).json({ message: "Code sent!" });
     }
@@ -163,7 +169,7 @@ export const verifyVerificationCode = async (req, res) => {
         .status(400)
         .json({ message: "something wrong with the code." });
     }
-    if (Date.now() - existingUser.emailVerificationExpires > 5 * 600 * 1000) {
+    if (Date.now() > existingUser.emailVerificationExpires) {
       return res.status(400).json({ message: "The code is expired!" });
     }
     const hashedCode = processHmac(codeValue, HMAC_SECRET);
@@ -182,34 +188,149 @@ export const verifyVerificationCode = async (req, res) => {
   }
 };
 
-export const vvc = async () => {
-  const { email, code } = req.body;
+export const changePassword = async (req, res) => {
+  const { id } = req.user;
+  const { oldPassword, newPassword } = req.body;
+
   try {
-    const { error, value } = acceptCodeSchema.validate({ email, code });
-    if (error) {
+    // Validate input
+    const { error } = changePasswordSchema.validate({
+      oldPassword,
+      newPassword,
+    });
+    if (error)
       return res.status(400).json({ message: error.details[0].message });
-    }
-    const codeValue = code.toString();
-    const existingUser = await User.findOne({ email });
-  } catch (error) {}
+
+    // Fetch user from DB
+    const existingUser = await User.findById(id).select(
+      "+password emailVerified"
+    );
+    if (!existingUser)
+      return res.status(404).json({ message: "User not found!" });
+    if (!existingUser.emailVerified)
+      return res.status(403).json({ message: "Email not verified." });
+
+    // Check old password
+    const valid = await doHashValidation(oldPassword, existingUser.password);
+    if (!valid)
+      return res.status(401).json({ message: "Invalid old password!" });
+
+    // Prevent password reuse
+    const isSamePassword = await doHashValidation(
+      newPassword,
+      existingUser.password
+    );
+    if (isSamePassword)
+      return res
+        .status(400)
+        .json({ message: "New password cannot be same as old password." });
+
+    // Save new password
+    existingUser.password = await doHash(newPassword);
+    await existingUser.save();
+
+    res.status(200).json({ message: "Password changed successfully!" });
+  } catch (err) {
+    console.error(err); // internal logging
+    res.status(500).json({ message: "Server Error!" });
+  }
 };
 
-export const readCookie = async (req, res) => {
+export const sendForgetPasswordCode = async (req, res) => {
+  const { email } = req.body;
+
   try {
-    const headersCookie = req.headers.cookie;
-    if (!headersCookie) {
-      return res.status(200).json({ cookie: null });
+    // Joi validation
+    const { error } = sendCodeSchema.validate({ email });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
+
+    const existingUser = await User.findOne({ email });
+
+    // Respond generically to avoid email enumeration
+    if (!existingUser) {
+      return res
+        .status(200)
+        .json({ message: "If this email exists, a code has been sent." });
     }
-    // convert cookie strings to an object
-    console.log(headersCookie);
-    const cookies = {};
-    headersCookie.split(";").forEach((cookie) => {
-      const [name, value] = cookie.trim().split("=");
-      cookies[name] = value;
+
+    // Generate 6-digit code
+    const codeValue = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, "0");
+
+    // Send mail return {  accepted: ['recipient@example.com'], rejected: [], ....}
+    const mailRes = await transport.sendMail({
+      from: EMAIL_USER,
+      to: existingUser.email,
+      subject: "Forgot password verification code",
+      html: `<h1>${codeValue}</h1>`,
     });
 
-    res.status(200).json({ headersCookie, cookies });
+    if (!mailRes?.accepted?.includes(existingUser.email)) {
+      return res
+        .status(500)
+        .json({ message: "Failed to send code. Try again later." });
+    }
+
+    // Save hashed token + expiry
+    existingUser.forgotPasswordToken = processHmac(codeValue, HMAC_SECRET);
+    existingUser.forgotPasswordExpires = new Date(Date.now() + 5 * 60 * 1000);
+    await existingUser.save();
+
+    return res
+      .status(200)
+      .json({ message: "If this email exists, a code has been sent." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error!" });
+  }
+};
+
+export const verifyForgetPasswordCode = async (req, res) => {
+  const { email, providedCode, newPassword } = req.body;
+
+  try {
+    // Validate input
+    const { error } = verifyForgetPasswordSchema.validate({
+      email,
+      providedCode,
+      newPassword,
+    });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
+
+    const existingUser = await User.findOne({ email }).select(
+      "+forgotPasswordToken +forgotPasswordExpires +password"
+    );
+    if (!existingUser)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    if (
+      !existingUser.forgotPasswordToken ||
+      !existingUser.forgotPasswordExpires
+    ) {
+      return res.status(400).json({ message: "Something went wrong!" });
+    }
+
+    if (Date.now() > new Date(existingUser.forgotPasswordExpires).getTime()) {
+      return res.status(400).json({ message: "The code is expired!" });
+    }
+
+    const hashedCodedValue = processHmac(providedCode, HMAC_SECRET);
+
+    if (hashedCodedValue === existingUser.forgotPasswordToken) {
+      const hashNewPassword = await doHash(newPassword);
+      existingUser.password = hashNewPassword;
+      existingUser.forgotPasswordToken = undefined;
+      existingUser.forgotPasswordExpires = undefined;
+      await existingUser.save();
+      return res.status(200).json({ message: "Password updated!" });
+    }
+
+    return res.status(400).json({ message: "Invalid code!" });
   } catch (error) {
-    res.status(500).json({ message: "Server Error!", error: error.message });
+    console.error(error);
+    return res.status(500).json({ message: "Server Error!" });
   }
 };

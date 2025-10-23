@@ -1,0 +1,212 @@
+[
+  {
+    "title": "Exploring the Mountains",
+    "description": "A deep dive into the experience of hiking through remote mountain ranges and finding peace in solitude.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:00:00.000Z",
+    "updatedAt": "2025-10-23T10:00:00.000Z"
+  },
+  {
+    "title": "A Journey into Minimalism",
+    "description": "Understanding how reducing clutter and focusing on essentials can transform your daily life and mindset.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:01:00.000Z",
+    "updatedAt": "2025-10-23T10:01:00.000Z"
+  },
+  {
+    "title": "Mastering JavaScript",
+    "description": "A comprehensive guide to improving your JavaScript skills with tips, patterns, and real-world examples.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:02:00.000Z",
+    "updatedAt": "2025-10-23T10:02:00.000Z"
+  },
+  {
+    "title": "The Art of Coffee Brewing",
+    "description": "Exploring different coffee brewing techniques, from pour-over to espresso, and how grind size affects flavor.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:03:00.000Z",
+    "updatedAt": "2025-10-23T10:03:00.000Z"
+  },
+  {
+    "title": "Morning Routines That Work",
+    "description": "How to create a morning routine that boosts productivity, focus, and mental clarity for the rest of the day.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:04:00.000Z",
+    "updatedAt": "2025-10-23T10:04:00.000Z"
+  },
+  {
+    "title": "Understanding Async/Await",
+    "description": "Learn how asynchronous JavaScript works, and how async/await simplifies working with promises and APIs.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:05:00.000Z",
+    "updatedAt": "2025-10-23T10:05:00.000Z"
+  },
+  {
+    "title": "Healthy Meal Prep Ideas",
+    "description": "A weekly meal prep guide filled with nutritious and easy-to-make recipes that save you time and money.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:06:00.000Z",
+    "updatedAt": "2025-10-23T10:06:00.000Z"
+  },
+  {
+    "title": "Productivity in the Digital Age",
+    "description": "Exploring how technology both helps and hinders productivity, and how to maintain balance in a digital world.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:07:00.000Z",
+    "updatedAt": "2025-10-23T10:07:00.000Z"
+  },
+  {
+    "title": "Learning React from Scratch",
+    "description": "A beginner’s guide to understanding the core concepts of React and building your first interactive web app.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:08:00.000Z",
+    "updatedAt": "2025-10-23T10:08:00.000Z"
+  },
+  {
+    "title": "Finding Focus in a Distracted World",
+    "description": "How to improve focus and deep work habits in an era of constant notifications and social media temptation.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:09:00.000Z",
+    "updatedAt": "2025-10-23T10:09:00.000Z"
+  },
+  {
+    "title": "Photography Basics for Beginners",
+    "description": "Learn how to capture stunning photos with simple composition techniques, lighting, and camera settings.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:10:00.000Z",
+    "updatedAt": "2025-10-23T10:10:00.000Z"
+  },
+  {
+    "title": "The Psychology of Habits",
+    "description": "Understanding how habits form and how to use behavioral science to replace bad ones with positive routines.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:11:00.000Z",
+    "updatedAt": "2025-10-23T10:11:00.000Z"
+  },
+  {
+    "title": "Building REST APIs with Node.js",
+    "description": "A practical guide to setting up RESTful APIs using Express, middleware, and MongoDB integration.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:12:00.000Z",
+    "updatedAt": "2025-10-23T10:12:00.000Z"
+  },
+  {
+    "title": "Remote Work Tips for Developers",
+    "description": "How to stay productive and connected while working remotely as a software engineer or freelancer.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:13:00.000Z",
+    "updatedAt": "2025-10-23T10:13:00.000Z"
+  },
+  {
+    "title": "Building Confidence in Public Speaking",
+    "description": "Step-by-step strategies for overcoming stage fright and delivering presentations that inspire confidence.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:14:00.000Z",
+    "updatedAt": "2025-10-23T10:14:00.000Z"
+  },
+  {
+    "title": "The Power of Gratitude",
+    "description": "Exploring the science behind gratitude and how daily gratitude practices improve happiness and well-being.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:15:00.000Z",
+    "updatedAt": "2025-10-23T10:15:00.000Z"
+  },
+  {
+    "title": "Time Management for Creatives",
+    "description": "A guide for artists and designers to structure time effectively without sacrificing creativity or freedom.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:16:00.000Z",
+    "updatedAt": "2025-10-23T10:16:00.000Z"
+  },
+  {
+    "title": "Understanding MongoDB Indexing",
+    "description": "Learn how MongoDB indexes work, why they matter, and how to optimize queries for better performance.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:17:00.000Z",
+    "updatedAt": "2025-10-23T10:17:00.000Z"
+  },
+  {
+    "title": "How to Build a Personal Portfolio",
+    "description": "A developer’s guide to creating an impressive personal website to showcase projects and attract opportunities.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:18:00.000Z",
+    "updatedAt": "2025-10-23T10:18:00.000Z"
+  },
+  {
+    "title": "The Science of Motivation",
+    "description": "Breaking down intrinsic and extrinsic motivation and how to build lasting drive toward personal goals.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:19:00.000Z",
+    "updatedAt": "2025-10-23T10:19:00.000Z"
+  },
+  {
+    "title": "Understanding Git and GitHub",
+    "description": "An easy-to-follow tutorial on using Git version control, managing branches, and collaborating via GitHub.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:20:00.000Z",
+    "updatedAt": "2025-10-23T10:20:00.000Z"
+  },
+  {
+    "title": "Overcoming Imposter Syndrome",
+    "description": "How to recognize imposter syndrome, why it happens, and practical techniques to build confidence and self-trust.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:21:00.000Z",
+    "updatedAt": "2025-10-23T10:21:00.000Z"
+  },
+  {
+    "title": "A Beginner’s Guide to TypeScript",
+    "description": "An introduction to TypeScript’s type system and how it helps developers write safer, more maintainable JavaScript.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:22:00.000Z",
+    "updatedAt": "2025-10-23T10:22:00.000Z"
+  },
+  {
+    "title": "Building a Blog with Next.js",
+    "description": "A complete tutorial on setting up a fast and SEO-friendly blog using Next.js, MDX, and MongoDB integration.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:23:00.000Z",
+    "updatedAt": "2025-10-23T10:23:00.000Z"
+  },
+  {
+    "title": "The Benefits of Daily Reading",
+    "description": "How reading just 20 minutes a day can dramatically improve focus, creativity, and emotional intelligence.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:24:00.000Z",
+    "updatedAt": "2025-10-23T10:24:00.000Z"
+  },
+  {
+    "title": "Effective Note-Taking Strategies",
+    "description": "Discover note-taking systems like Cornell, Zettelkasten, and mind mapping to retain more from your studies.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:25:00.000Z",
+    "updatedAt": "2025-10-23T10:25:00.000Z"
+  },
+  {
+    "title": "How to Build Consistency",
+    "description": "Why consistency beats motivation and how to design systems that make success a daily habit.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:26:00.000Z",
+    "updatedAt": "2025-10-23T10:26:00.000Z"
+  },
+  {
+    "title": "The Future of Artificial Intelligence",
+    "description": "Exploring current trends and ethical considerations shaping the future of AI development and human collaboration.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:27:00.000Z",
+    "updatedAt": "2025-10-23T10:27:00.000Z"
+  },
+  {
+    "title": "Mindfulness for Developers",
+    "description": "Simple mindfulness techniques to reduce stress, avoid burnout, and stay focused during intense coding sessions.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:28:00.000Z",
+    "updatedAt": "2025-10-23T10:28:00.000Z"
+  },
+  {
+    "title": "How to Stay Motivated While Learning",
+    "description": "Practical ways to keep motivation high while learning complex topics, including gamification and accountability tricks.",
+    "userId": "6718d4fc1a2b4f09b7e1a001",
+    "createdAt": "2025-10-23T10:29:00.000Z",
+    "updatedAt": "2025-10-23T10:29:00.000Z"
+  }
+]
