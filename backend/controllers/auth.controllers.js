@@ -75,7 +75,7 @@ export const signin = async (req, res) => {
 
     res
       .cookie("Authorization", `Bearer ${token}`, {
-        expires: new Date(Date.now() + 8 * 3600000), // 8 hours
+        expires: new Date(Date.now() + 5 * 3600000), // 8 hours
         httpOnly: NODE_ENV === "production",
         secure: NODE_ENV === "production",
         sameSite: "Strict",
@@ -110,7 +110,7 @@ export const sendVerificationCode = async (req, res) => {
     }
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-      return res.status(401).json({ message: "Invalid user!" });
+      return res.status(404).json({ message: "Invalid user!" });
     }
     if (existingUser.emailVerified) {
       return res.status(403).json({ message: "You are already verified!" });
@@ -134,7 +134,6 @@ export const sendVerificationCode = async (req, res) => {
       existingUser.emailVerificationExpires = new Date(
         Date.now() + 5 * 60 * 1000
       );
-      existingUser.emailVerificationExpires = Date.now() + 5 * 60 * 1000;
       await existingUser.save();
       return res.status(200).json({ message: "Code sent!" });
     }
@@ -202,9 +201,7 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ message: error.details[0].message });
 
     // Fetch user from DB
-    const existingUser = await User.findById(id).select(
-      "+password emailVerified"
-    );
+    const existingUser = await User.findById(id).select("+password");
     if (!existingUser)
       return res.status(404).json({ message: "User not found!" });
     if (!existingUser.emailVerified)

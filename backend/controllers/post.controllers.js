@@ -24,8 +24,16 @@ export const getPosts = async (req, res) => {
 };
 
 export const getSinglePost = async (req, res) => {
+  const { _id } = req.query;
   try {
-    res.status(200).json({ message: "Ok" });
+    const singlePost = await Post.findOne({ _id }).populate({
+      path: "userId",
+      select: "email",
+    });
+    if (!singlePost) {
+      return res.status(404).json({ message: "Not found!" });
+    }
+    res.status(200).json({ message: "singlePost", singlePost });
   } catch (error) {
     res.status(500).json({ message: "Server error! " + error.message });
   }
@@ -46,9 +54,50 @@ export const createPost = async (req, res) => {
   }
 };
 
-export const updatePost = async (req, res) => {
+export const updatePostXX = async (req, res) => {
+  const { queryId } = req.query;
+  const { title, description } = req.body;
+  const { id } = req.user;
+
   try {
-    res.status(200).json({ message: "Ok" });
+    const { error } = createPostSchema.validate({ title, description });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
+
+    const existingPost = await Post.findOne({ queryId });
+    if (!existingPost)
+      return res.status(404).json({ message: "Post not found!" });
+
+    if (existingPost.userId.toString() !== id)
+      return res.status(403).json({ message: "Unauthorized" });
+
+    existingPost.title = title;
+    existingPost.description = description;
+
+    const result = await existingPost.save();
+    res.status(200).json({ message: "Post Updated", result });
+  } catch (error) {
+    res.status(500).json({ message: "Server error! " + error.message });
+  }
+};
+
+export const updatePost = async (req, res) => {
+  const { queryId } = req.query;
+  const { title, description } = req.body;
+  const { id: userId } = req.user;
+  try {
+    const { error, value } = createPostSchema.validate({ title, description });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    const existingUser = await Post.findOne({ queryId });
+    if (userId !== existingUser.userId.toString()) {
+      return res.status(404).json({ message: "Unauthorized!" });
+    }
+    existingUser.title = title;
+    existingUser.description = description;
+    const result = await existingUser.save();
+    res.status(200).json({ message: "Post updated", result });
   } catch (error) {
     res.status(500).json({ message: "Server error! " + error.message });
   }

@@ -1,4 +1,4 @@
-import { hash, compare } from "bcryptjs";
+import bcrypt, { hash, compare } from "bcryptjs";
 import crypto from "crypto";
 
 export const doHash = async (value, salt = 10) => {
@@ -17,9 +17,9 @@ export const doHashValidation = async (value, hashedValue) => {
   }
 };
 
-export const processHmac = (key, value) => {
+export const processHmac = (codeValue, secret) => {
   try {
-    return crypto.createHmac("sha256", key).update(value).digest("hex");
+    return crypto.createHmac("sha256", codeValue).update(secret).digest("hex");
   } catch (error) {
     throw new Error({ message: "crypto hmac failed", error });
   }

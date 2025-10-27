@@ -8,7 +8,9 @@
 import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config/env.js";
 
-export const verifyToken = async (req, res, next) => {
+export const verifyToken = (req, res, next) => {
+  console.log(req.headers);
+  // console.log(req.headers);
   // Determine source: browser or API client
   const rawToken =
     req.headers.client === "not-browser"
@@ -30,6 +32,22 @@ export const verifyToken = async (req, res, next) => {
     req.user = decodedToken;
 
     next();
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+const verifyTok = (req, res, next) => {
+  const rawToken =
+    req.headers.client === "not-browser"
+      ? req.headers.authorization
+      : req.headers["Authorization"];
+  if (!rawToken) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const token = rawToken.split(" ")[1];
+    const result = jwt.verify(token, TOKEN_SECRET);
   } catch (error) {
     res.status(401).json({ message: "Invalid token" });
   }
