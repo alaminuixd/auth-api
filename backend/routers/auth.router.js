@@ -8,6 +8,7 @@ import {
   changePassword,
   sendForgetPasswordCode,
   verifyForgetPasswordCode,
+  getUsers,
 } from "../controllers/auth.controllers.js";
 import { verifyToken } from "../middlewares/verify.token.js";
 
@@ -25,5 +26,6 @@ authRouter.patch(
 authRouter.patch("/change-password", verifyToken, changePassword);
 authRouter.patch("/forget-password", sendForgetPasswordCode);
 authRouter.patch("/verify-password-code", verifyForgetPasswordCode);
+authRouter.get("/get-users", getUsers);
 
 export default authRouter;

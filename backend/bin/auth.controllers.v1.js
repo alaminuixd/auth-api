@@ -18,54 +18,27 @@ import {
 } from "../middlewares/auth.schemas.js";
 
 // ************************ ROUTES ************************************
-
 export const signup = async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // 1️⃣ Validate input
-    const { error } = signupSchema.validate({ email, password });
+    const { error, value } = signupSchema.validate({ email, password });
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
-    // 2️⃣ Check existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      // Already verified
-      if (existingUser.emailVerified) {
-        return res.status(409).json({ message: "User already exists!" });
-      }
-      // Check if verification expired (e.g., 24h)
-      const expired =
-        existingUser.createdAt < new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-
-      if (!expired) {
-        return res.status(400).json({
-          message:
-            "Your email is not verified. Please request a verification code to continue.",
-          action: "send_verification_code",
-          email: existingUser.email,
-        });
-      }
-      // Expired → delete old unverified user
-      await User.deleteOne({ _id: existingUser._id });
+      return res.status(409).json({ message: "User already exists" });
     }
-
-    // Create new user
-    const hashedPassword = await doHash(password);
+    const hashedPassword = await doHash(password, 10);
     const newUser = new User({
       email,
       password: hashedPassword,
-      emailVerified: false,
     });
-    await newUser.save();
-
-    res.status(201).json({
-      message:
-        "Signup successful! Please verify your email to activate your account.",
-    });
+    const result = await newUser.save();
+    result.password = undefined;
+    res.status(201).json({ message: "New user created.", user: newUser });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({ message: "Server Error!", error: error.message });
   }
 };
 
@@ -293,7 +266,7 @@ export const sendForgetPasswordCode = async (req, res) => {
 
     if (!mailRes?.accepted?.includes(existingUser.email)) {
       return res
-        .status(403)
+        .status(500)
         .json({ message: "Failed to send code. Try again later." });
     }
 
@@ -356,21 +329,5 @@ export const verifyForgetPasswordCode = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server Error!" });
-  }
-};
-
-export const getUsers = async (req, res) => {
-  console.log(req.user);
-  const { page = 1 } = req.query;
-  const postPerPage = 10;
-  try {
-    const pageNum = Math.max(parseInt(page) - 1, 0);
-    const data = await User.find()
-      .sort({ createdAt: -1 })
-      .skip(pageNum * postPerPage)
-      .limit(postPerPage);
-    res.status(200).json({ message: "Success", data });
-  } catch (error) {
-    return res.status(500).json({ message: "Server Error", error });
   }
 };

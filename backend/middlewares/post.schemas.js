@@ -10,7 +10,7 @@ export const createPostSchema = Joi.object({
     "any.required": "Title is required",
   }),
 
-  description: Joi.string().min(10).max(600).required().messages({
+  description: Joi.string().min(10).max(1000).required().messages({
     "string.base": "Description must be a string",
     "string.empty": "Description cannot be empty",
     "string.min": "Description must be at least 10 characters",

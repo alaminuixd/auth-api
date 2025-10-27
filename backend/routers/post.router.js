@@ -10,10 +10,11 @@ import {
 
 const postRouter = Router();
 
-postRouter.get("/get-all-posts", getPosts);
-postRouter.get("/get-single-post", getSinglePost);
+postRouter.get("/all-posts", getPosts);
+postRouter.get("/single-post/:id", getSinglePost);
+// postRouter.get("/get-single-post", getSinglePost);
 postRouter.post("/create-post", verifyToken, createPost);
-postRouter.put("/update-post", verifyToken, updatePost);
-postRouter.delete("/delete-post", deletePost);
+postRouter.patch("/update-post/:id", verifyToken, updatePost);
+postRouter.delete("/delete-post/:id", verifyToken, deletePost);
 
 export default postRouter;

@@ -24,9 +24,10 @@ export const getPosts = async (req, res) => {
 };
 
 export const getSinglePost = async (req, res) => {
-  const { _id } = req.query;
+  // const { _id } = req.query;
+  const { id } = req.params;
   try {
-    const singlePost = await Post.findOne({ _id }).populate({
+    const singlePost = await Post.findOne({ _id: id }).populate({
       path: "userId",
       select: "email",
     });
@@ -41,6 +42,7 @@ export const getSinglePost = async (req, res) => {
 
 export const createPost = async (req, res) => {
   const { title, description } = req.body;
+  // req.user is comming from jwt "verifyToken" middleware
   const { id } = req.user;
   try {
     const { error, value } = createPostSchema.validate({ title, description });
@@ -82,30 +84,65 @@ export const updatePostXX = async (req, res) => {
 };
 
 export const updatePost = async (req, res) => {
-  const { queryId } = req.query;
-  const { title, description } = req.body;
-  const { id: userId } = req.user;
+  const { id } = req.params; // post ID from URL
+  const { title, description } = req.body; // new post data
+  const { id: userId } = req.user; // logged-in user's ID (from JWT)
+
   try {
+    // ✅ Validate input fields using Joi schema
     const { error, value } = createPostSchema.validate({ title, description });
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
-    const existingUser = await Post.findOne({ queryId });
-    if (userId !== existingUser.userId.toString()) {
-      return res.status(404).json({ message: "Unauthorized!" });
+
+    // 🔍 Find the post in the database by its ID
+    const existingPost = await Post.findOne({ _id: id });
+
+    // ⚠️ If post doesn't exist, return 404
+    if (!existingPost) {
+      return res.status(404).json({ message: "Post not found!" });
     }
-    existingUser.title = title;
-    existingUser.description = description;
-    const result = await existingUser.save();
+
+    // 🔐 Ensure the logged-in user owns this post
+    // match loggedin user's userId, from jwt token payload, to existingPost userId
+    if (userId !== existingPost.userId.toString()) {
+      return res.status(403).json({ message: "Unauthorized!" });
+    }
+
+    // 📝 Update post fields
+    existingPost.title = title;
+    existingPost.description = description;
+
+    // 💾 Save updated post to database
+    const result = await existingPost.save();
+
     res.status(200).json({ message: "Post updated", result });
   } catch (error) {
+    // ❌ Handle unexpected server errors
     res.status(500).json({ message: "Server error! " + error.message });
   }
 };
 
 export const deletePost = async (req, res) => {
+  const { id } = req.params;
+  const { id: userId } = req.user; // optional: to check ownership
+
   try {
-    res.status(200).json({ message: "Ok" });
+    // 🔍 Find post by ID
+    const existingPost = await Post.findById(id);
+    if (!existingPost) {
+      return res.status(404).json({ message: "Post doesn't exist!" });
+    }
+
+    // 🔐 Optional: verify that the logged-in user owns the post
+    if (userId !== existingPost.userId.toString()) {
+      return res.status(403).json({ message: "Unauthorized!" });
+    }
+
+    // 🗑️ Delete the post
+    await Post.deleteOne({ _id: id });
+
+    res.status(200).json({ message: "Post deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error! " + error.message });
   }
