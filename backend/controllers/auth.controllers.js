@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import { doHash, doHashValidation, processHmac } from "../utils/hashing.js";
 import {
@@ -21,97 +22,94 @@ import {
 
 export const signup = async (req, res) => {
   const { email, password } = req.body;
-
+  const session = await mongoose.startSession();
   try {
-    // 1️⃣ Validate input
     const { error } = signupSchema.validate({ email, password });
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
-    // 2️⃣ Check existing user
-    const existingUser = await User.findOne({ email });
+    session.startTransaction();
+    const existingUser = await User.findOne({ email }, { session });
     if (existingUser) {
-      // Already verified
       if (existingUser.emailVerified) {
-        return res.status(409).json({ message: "User already exists!" });
+        await session.abortTransaction();
+        return res
+          .status(409)
+          .json({ message: "You are already a verified user!" });
       }
-      // Check if verification expired (e.g., 24h)
-      const expired =
-        existingUser.createdAt < new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-
-      if (!expired) {
+      const codeExpired =
+        existingUser.createdAt < new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (!codeExpired) {
+        await session.abortTransaction();
         return res.status(400).json({
           message:
-            "Your email is not verified. Please request a verification code to continue.",
+            "Please verify using the code we've already sent to your email",
           action: "send_verification_code",
           email: existingUser.email,
         });
       }
-      // Expired → delete old unverified user
-      await User.deleteOne({ _id: existingUser._id });
+      await existingUser.deleteOne({ session });
     }
-
-    // Create new user
     const hashedPassword = await doHash(password);
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      emailVerified: false,
-    });
-    await newUser.save();
-
-    res.status(201).json({
-      message:
-        "Signup successful! Please verify your email to activate your account.",
-    });
+    const newUser = await User.create(
+      { email, password: hashedPassword },
+      {
+        session,
+      }
+    );
+    newUser.password = undefined;
+    await session.commitTransaction();
+    return res.status(201).json({ message: "New user created!", newUser });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    await session.abortTransaction();
+    res.status(500).json({ message: "Server error!", error: error.message });
+  } finally {
+    session.endSession();
   }
 };
-
+// Logic flow : validation → find user → password check → JWT → response.
 export const signin = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const { error, value } = signinSchema.validate({ email, password });
+    const { error } = signinSchema.validate({ email, password });
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
-
     const existingUser = await User.findOne({ email }).select("+password");
-
     if (!existingUser) {
-      return res.status(404).json({ message: "User not found!" });
+      return res.status(404).json({ message: "Invalid cradentials!" });
     }
-
-    const isValidPassword = await doHashValidation(
+    const validPassword = await doHashValidation(
       password,
       existingUser.password
     );
-
-    if (!isValidPassword) {
-      return res.status(400).json({ message: "Invalid password!" });
+    if (!validPassword) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
-
     const payload = {
       id: existingUser._id,
       email: existingUser.email,
       emailVerified: existingUser.emailVerified,
     };
-
-    const token = jwt.sign(payload, TOKEN_SECRET, { expiresIn: "5h" });
-
+    const EXPIRY_HOURS = 5;
+    const token = jwt.sign(payload, TOKEN_SECRET, {
+      expiresIn: `${EXPIRY_HOURS}h`,
+    });
+    existingUser.password = undefined;
     res
       .cookie("Authorization", `Bearer ${token}`, {
-        expires: new Date(Date.now() + 5 * 3600000), // 8 hours
+        expires: new Date(Date.now() + EXPIRY_HOURS * 3600000),
         httpOnly: NODE_ENV === "production",
         secure: NODE_ENV === "production",
         sameSite: "Strict",
       })
-      .json({ message: "Login Success!" });
+      .status(200)
+      .json({ message: "Login Success!", existingUser, token });
   } catch (error) {
-    res.status(500).json({ message: "Server Error!", error: error.message });
+    res.status(500).json({ message: "Server error!", error: error.message });
   }
 };
+
 export const signout = async (req, res) => {
   try {
     console.log(req.user);
@@ -155,7 +153,7 @@ export const sendVerificationCode = async (req, res) => {
     });
 
     console.log(mailRes);
-    if (mailRes.accepted && mailRes.accepted.includes(existingUser.email)) {
+    if (mailRes?.accepted?.includes(existingUser.email)) {
       const hashedCodeValue = processHmac(codeValue, HMAC_SECRET);
       existingUser.emailVerificationToken = hashedCodeValue;
       existingUser.emailVerificationExpires = new Date(

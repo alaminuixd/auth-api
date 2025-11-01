@@ -19,7 +19,8 @@ export const doHashValidation = async (value, hashedValue) => {
 
 export const processHmac = (codeValue, secret) => {
   try {
-    return crypto.createHmac("sha256", codeValue).update(secret).digest("hex");
+    //* createHmac first value is "secret" and update with any code
+    return crypto.createHmac("sha256", secret).update(codeValue).digest("hex");
   } catch (error) {
     throw new Error({ message: "crypto hmac failed", error });
   }

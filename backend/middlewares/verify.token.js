@@ -5,50 +5,68 @@
 3) and allows the request to continue to the next handler.
 4) If not valid or missing, it stops the request and returns "Unauthorized". 
 */
+/*
+JWT Token Handling Rules
+
+Authorization Header:
+- Format: Authorization: Bearer <token>
+- Server access: req.headers.authorization.split(" ")[1]
+- Use for APIs, mobile apps, or non-browser clients.
+
+Cookie:
+- Format: <cookieName>=<token> (no Bearer)
+- Server access: req.cookies.<cookieName> (with cookie-parser)
+- Use for browser sessions; browser sends automatically.
+
+✅ Rule of Thumb:
+- Header → Bearer <token>
+- Cookie → raw token
+*/
 import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config/env.js";
 
-export const verifyToken = (req, res, next) => {
-  console.log(req.headers);
-  // console.log(req.headers);
-  // Determine source: browser or API client
+// Logic flow: Get token → Validate presence → Check format → Verify JWT → Attach payload → Call next() → Handle errors
+const verifyToken = (req, res, next) => {
   const rawToken =
     req.headers.client === "not-browser"
       ? req.headers.authorization
-      : req.cookies["Authorization"];
+      : req.cookies["Authorization"]; // match cookie name
 
   if (!rawToken) {
     return res.status(401).json({ message: "Unauthorized!" });
   }
 
   try {
-    // Remove "Bearer " prefix if present
-    const token = rawToken.split(" ")[1];
-
-    // Verify and decode token
-    const decodedToken = jwt.verify(token, TOKEN_SECRET);
-
-    // Attach decoded payload to request
-    req.user = decodedToken;
-
+    const tokenParts = rawToken.split(" ");
+    if (tokenParts.length !== 2) {
+      return res.status(401).json({ message: "Invalid token format!" });
+    }
+    // tokenPayload = { id: existingUser._id, email: existingUser.email, emailVerified: existingUser.emailVerified}
+    const tokenPayload = jwt.verify(tokenParts[1], TOKEN_SECRET);
+    req.user = tokenPayload;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ message: "Invalid token!" });
   }
 };
 
-const verifyTok = (req, res, next) => {
+export const verifyToken2 = (req, res, next) => {
   const rawToken =
     req.headers.client === "not-browser"
-      ? req.headers.authorization
-      : req.headers["Authorization"];
+      ? req.headers.authoriztion
+      : req.cookies["authorization"];
   if (!rawToken) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized!" });
   }
   try {
-    const token = rawToken.split(" ")[1];
-    const result = jwt.verify(token, TOKEN_SECRET);
+    const tokenParts = rawToken.split(" ");
+    if (tokenParts.length !== 2) {
+      return res.status(401).json({ message: "Invalid token format" });
+    }
+    const tokenPayload = jwt.verify(tokenParts[1], TOKEN_SECRET);
+    req.user = tokenPayload;
+    next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "invalid token" });
   }
 };

@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
     forgotPasswordExpires: {
-      type: String,
+      type: Date,
       select: false,
     },
   },
