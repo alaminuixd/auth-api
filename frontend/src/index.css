@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@layer {
+  body {
+    font-family: Poppins, Arial, Helvetica, sans-serif;
+    @apply block bg-gray-100 p-0 m-0;
+  }
+  h1 {
+    @apply text-3xl font-bold;
+  }
+  h2 {
+    @apply text-2xl font-bold;
+  }
+  h3 {
+    @apply text-xl font-bold;
+  }
+  input[type="text"] {
+    @apply w-full border border-gray-300 rounded mt-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400;
+  }
+  .btn-submit1 {
+    @apply w-full bg-blue-600 text-white font-semibold py-4 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer;
+  }
+}
