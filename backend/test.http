@@ -1,0 +1,9 @@
+###
+POST http://localhost:3009/api/auth/signup
+Content-Type: application/json
+
+{
+    "email":"alamin@gmail.com",
+    "password":"Kh@n12345",
+    "repassword":"Kh@n12345"
+}

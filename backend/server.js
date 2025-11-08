@@ -10,7 +10,12 @@ import authRouter from "./routers/auth.router.js";
 const app = express();
 const PORT = SERVER_PORT || 3009;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // your React app URL
+    credentials: true, // 👈 Allow cookies to be sent
+  })
+);
 app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());

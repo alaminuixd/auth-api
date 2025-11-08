@@ -1,4 +1,10 @@
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import {
+  ACCESS_TOKEN_SECRET,
+  NODE_ENV,
+  REFRESH_TOKEN_SECRET,
+} from "../config/env.js";
 import {
   signupSchema,
   signinSchema,
@@ -8,368 +14,112 @@ import {
 import User from "../models/users.model.js";
 import { doHash, doHashValidation, processHmac } from "./../utils/hashing.js";
 import { transport } from "../middlewares/send.mail.js";
-
 // Constroller functions
 export const signup = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, repassword } = req.body;
+  const session = await mongoose.startSession();
   try {
-    const { error, value } = signupSchema.validate({ email, password });
+    const { error } = signupSchema.validate({ email, password, repassword });
     if (error) {
-      return res
-        .status(400)
-        .json({ success: false, message: error.details[0].message });
+      return res.status(400).json({ message: error.details[0].message });
     }
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    // Start transaction
+    session.startTransaction();
+    const existingUser = await User.findOne({ email: normalizedEmail }).session(
+      session
+    );
+    // Check for existing user and if verification expired
     if (existingUser) {
-      return res
-        .status(409)
-        .json({ success: false, message: "User already exitsts!" });
+      if (existingUser.emailVerified) {
+        await session.abortTransaction();
+        return res
+          .status(409)
+          .json({ message: "You are already a verified user!" });
+      }
+      const codeExpired =
+        existingUser.createdAt < new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (!codeExpired) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          message:
+            "Please verify your mail using the code we've already sent to your email",
+          action: "send_verification_code",
+          email: existingUser.email,
+        });
+      }
+      await existingUser.deleteOne({ session });
     }
-    const hashedPassword = await doHash(password, 12);
+    const hashedPassword = await doHash(password);
     const newUser = new User({
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
     });
-    // save() writes to DB and returns a new document/object (not the same reference) ** check in bin
-    const result = await newUser.save();
-    result.password = undefined;
-    res
-      .status(201)
-      .json({ success: true, message: "New user created!", newUser });
+    await newUser.save({ session });
+    await session.commitTransaction();
+    // Prepare safe response
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+    delete userResponse.__v;
+
+    return res.status(201).json({ message: "New user created!", userResponse });
   } catch (error) {
-    console.log(error);
-    res.status(201).json({ message: error.message });
+    await session.abortTransaction();
+    res.status(500).json({ message: "Server error!", error: error.message });
+  } finally {
+    session.endSession();
   }
 };
 
 export const signin = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const { error, value } = signinSchema.validate({ email, password });
-    if (error) {
-      return res
-        .status(400)
-        .json({ success: false, message: error.details[0].message });
-    }
+    const { error } = signinSchema.validate({ email, password });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
     const existingUser = await User.findOne({ email }).select("+password");
-    if (!existingUser) {
-      return res
-        .status(401)
-        .json({ success: false, message: "User doesn't exist!" });
-    }
-    const validation = await doHashValidation(password, existingUser.password);
-    if (!validation) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid Cradentials" });
+    if (!existingUser)
+      return res.status(404).json({ message: "Invalid credentials!" });
+    const validPass = await doHashValidation(password, existingUser.password);
+    if (!validPass) {
+      return res.status(400).json({ message: "Invalid password!" });
     }
     const payload = {
-      userId: existingUser._id,
+      id: existingUser._id,
       email: existingUser.email,
-      verified: existingUser.verified,
+      emailVerified: existingUser.emailVerified,
     };
-    const token = jwt.sign(payload, process.env.TOKEN_SECRET, {
-      expiresIn: "8h",
+    const accessToken = jwt.sign(payload, ACCESS_TOKEN_SECRET, {
+      expiresIn: "15m",
     });
-    // response
-    res
-      .cookie("Authorization", `Bearer ${token}`, {
-        expires: new Date(Date.now() + 8 * 3600000), // 8 hours
-        // on production mode request with http will fail. But postman has exception
-        httpOnly: process.env.NODE_ENV === "production",
-        // on production mode request with http will fail. But postman has exception
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict", // optional, improves security
-      })
-      .json({ success: true, token, message: "Logged in success!" });
+    const refreshToken = jwt.sign(payload, REFRESH_TOKEN_SECRET, {
+      expiresIn: "7d",
+    });
+    // Send refreshToken in httpOnly cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: NODE_ENV === "production" ? true : false,
+      secure: NODE_ENV === "production" ? true : false, // false in dev
+      sameSite: NODE_ENV === "production" ? "None" : "Lax",
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+    // Send accessToken in response
+    res.status(200).json({ message: "login Success", accessToken });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server Error!" });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const signout = async (req, res) => {
   try {
-    console.log({ context: "req.user: ", user: req?.user });
     res
-      .clearCookie("Authorization", {
-        httpOnly: process.env.NODE_ENV === "production",
+      .clearCookie("refreshToken", {
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
       })
       .status(200)
-      .json({ success: true, message: "Logged out success" });
+      .json({ message: "Signout success!" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error in logged out" });
-  }
-};
-
-export const sendVerificationCode = async (req, res) => {
-  const { email } = req.body;
-
-  try {
-    const existingUser = await User.findOne({ email });
-    if (!existingUser) {
-      return res
-        .status(401)
-        .json({ success: false, message: "User does not exist!" });
-    }
-    // if true
-    if (existingUser.verified) {
-      return res
-        .status(403)
-        .json({ success: false, message: "You are already verified!" });
-    }
-
-    const codeValue = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, "0");
-
-    const info = await transport.sendMail({
-      from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
-      to: existingUser.email,
-      subject: "Verification Code",
-      html: `<h1>${codeValue}</h1>`,
-    });
-
-    if (info.accepted && info.accepted.includes(existingUser.email)) {
-      const hashedCodeValue = processHmac(
-        codeValue,
-        process.env.HMAC_VERIFICATION_CODE_SECRET
-      );
-
-      existingUser.verificationCode = hashedCodeValue;
-      existingUser.verificationCodeValidation = Date.now();
-
-      await existingUser.save();
-
-      return res
-        .status(200)
-        .json({ success: true, message: "Code sent successfully!" });
-    }
-
-    res.status(400).json({ success: false, message: "Code sending failed." });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error: " + error.message });
-  }
-};
-
-export const verifyVerificationCode = async (req, res) => {
-  const { email, providedCode } = req.body;
-  try {
-    const { error, value } = acceptCodeSchema.validate({
-      email,
-      providedCode,
-    });
-    if (error) {
-      return res
-        .status(400)
-        .json({ success: false, message: error.details[0].message });
-    }
-    const codeValue = providedCode.toString();
-    const existingUser = await User.findOne({ email }).select(
-      "+verificationCode + verificationCodeValidation"
-    );
-    if (!existingUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User does not exist!" });
-    }
-    if (existingUser.verified) {
-      return res
-        .status(403)
-        .json({ success: false, message: "You are already verified" });
-    }
-    if (
-      !existingUser.verificationCode ||
-      !existingUser.verificationCodeValidation
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Something is wrong with the code" });
-    }
-    if (Date.now() - existingUser.verificationCodeValidation > 5 * 60 * 1000) {
-      return res
-        .status(400)
-        .json({ success: false, message: "The code is expired" });
-    }
-    const hashedCodeValue = processHmac(
-      codeValue,
-      process.env.HMAC_VERIFICATION_CODE_SECRET
-    );
-    if (hashedCodeValue === existingUser.verificationCode) {
-      existingUser.verified = true;
-      existingUser.verificationCode = undefined;
-      existingUser.verificationCodeValidation = undefined;
-      await existingUser.save();
-      return res
-        .status(200)
-        .json({ success: true, message: "Your account has been verified" });
-    }
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid verification code" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error: " + error.message });
-  }
-};
-
-export const changePassword = async (req, res) => {
-  const { userId, verified } = req.user;
-  const { oldPassword, newPassword } = req.body;
-  try {
-    const { error, value } = changePasswordSchema.validate({
-      newPassword,
-      oldPassword,
-    });
-    if (error) {
-      return res
-        .status(400)
-        .json({ success: false, message: error.details[0].message });
-    }
-    if (!verified) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Sorry! you are not verified user!" });
-    }
-    const existingUser = await User.findOne({ _id: userId }).select(
-      "+password"
-    );
-    if (!existingUser) {
-      return res
-        .status(401)
-        .json({ success: false, message: "User not found!" });
-    }
-    const result = await doHashValidation(oldPassword, existingUser.password);
-    if (!result) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid cradentials" });
-    }
-    const hashedPassword = await doHash(newPassword, 12);
-    existingUser.password = hashedPassword;
-    await existingUser.save();
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully!",
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error: " + error.message });
-  }
-};
-
-export const sendForgotPasswordCode = async (req, res) => {
-  const { email } = req.body;
-
-  try {
-    const existingUser = await User.findOne({ email });
-    if (!existingUser) {
-      return res
-        .status(401)
-        .json({ success: false, message: "User does not exist!" });
-    }
-    const codeValue = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, "0");
-
-    const info = await transport.sendMail({
-      from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
-      to: existingUser.email,
-      subject: "Forgot password Code",
-      html: `<h1>${codeValue}</h1>`,
-    });
-
-    if (info.accepted && info.accepted.includes(existingUser.email)) {
-      const hashedCodeValue = processHmac(
-        codeValue,
-        process.env.HMAC_VERIFICATION_CODE_SECRET
-      );
-
-      existingUser.forgotPasswordCode = hashedCodeValue;
-      existingUser.forgotPasswordCodeValidation = Date.now();
-
-      await existingUser.save();
-
-      return res
-        .status(200)
-        .json({ success: true, message: "Code sent successfully!" });
-    }
-
-    return res
-      .status(400)
-      .json({ success: false, message: "Code sending failed." });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error: " + error.message });
-  }
-};
-
-export const verifyForgotPasswordCode = async (req, res) => {
-  const { email, providedCode, newPassword } = req.body;
-  try {
-    const { error, value, newPassword } = acceptCodeSchema.validate({
-      email,
-      providedCode,
-    });
-    if (error) {
-      return res
-        .status(400)
-        .json({ success: false, message: error.details[0].message });
-    }
-    const codeValue = providedCode.toString();
-    const existingUser = await User.findOne({ email }).select(
-      "+verificationCode + verificationCodeValidation"
-    );
-    if (!existingUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User does not exist!" });
-    }
-    if (existingUser.verified) {
-      return res
-        .status(403)
-        .json({ success: false, message: "You are already verified" });
-    }
-    if (
-      !existingUser.verificationCode ||
-      !existingUser.verificationCodeValidation
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Something is wrong with the code" });
-    }
-    if (Date.now() - existingUser.verificationCodeValidation > 5 * 60 * 1000) {
-      return res
-        .status(400)
-        .json({ success: false, message: "The code is expired" });
-    }
-    const hashedCodeValue = processHmac(
-      codeValue,
-      process.env.HMAC_VERIFICATION_CODE_SECRET
-    );
-    if (hashedCodeValue === existingUser.verificationCode) {
-      existingUser.verified = true;
-      existingUser.verificationCode = undefined;
-      existingUser.verificationCodeValidation = undefined;
-      await existingUser.save();
-      return res
-        .status(200)
-        .json({ success: true, message: "Your account has been verified" });
-    }
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid verification code" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error: " + error.message });
+    res.status(500).json({ message: error.message });
   }
 };
