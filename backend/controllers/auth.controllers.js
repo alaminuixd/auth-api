@@ -28,8 +28,11 @@ export const signup = async (req, res) => {
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
+    const normalizedEmail = email.trim().toLowerCase();
     session.startTransaction();
-    const existingUser = await User.findOne({ email }, { session });
+    const existingUser = await User.findOne({ email: normalizedEmail }).session(
+      session
+    );
     if (existingUser) {
       if (existingUser.emailVerified) {
         await session.abortTransaction();
@@ -51,15 +54,16 @@ export const signup = async (req, res) => {
       await existingUser.deleteOne({ session });
     }
     const hashedPassword = await doHash(password);
-    const newUser = await User.create(
-      { email, password: hashedPassword },
-      {
-        session,
-      }
-    );
-    newUser.password = undefined;
+    const newUser = new User({
+      email: normalizedEmail,
+      password: hashedPassword,
+    });
+    await newUser.save().session(session);
     await session.commitTransaction();
-    return res.status(201).json({ message: "New user created!", newUser });
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+    delete userResponse.__v;
+    return res.status(201).json({ message: "New user created!", userResponse });
   } catch (error) {
     await session.abortTransaction();
     res.status(500).json({ message: "Server error!", error: error.message });
