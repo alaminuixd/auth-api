@@ -36,6 +36,15 @@ const codeField = Joi.number().required().messages({
 export const signupSchema = Joi.object({
   email: emailField,
   password: passwordField,
+  repassword: Joi.string()
+    .required()
+    .empty("")
+    .valid(Joi.ref("password"))
+    .messages({
+      "any.only": "Passwords do not match",
+      "any.required": "Confirm password is required",
+      "string.empty": "Confirm password cannot be empty",
+    }),
 });
 
 export const signinSchema = Joi.object({

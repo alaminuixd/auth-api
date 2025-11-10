@@ -21,10 +21,10 @@ import {
 // ************************ ROUTES ************************************
 
 export const signup = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, repassword } = req.body;
   const session = await mongoose.startSession();
   try {
-    const { error } = signupSchema.validate({ email, password });
+    const { error } = signupSchema.validate({ email, password, repassword });
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
@@ -51,7 +51,7 @@ export const signup = async (req, res) => {
           email: existingUser.email,
         });
       }
-      await existingUser.deleteOne({ session });
+      await existingUser.deleteOne({ _id: existingUser._id }).session(session);
     }
     const hashedPassword = await doHash(password);
     const newUser = new User({
@@ -59,6 +59,7 @@ export const signup = async (req, res) => {
       password: hashedPassword,
     });
     await newUser.save().session(session);
+    await newUser.updateOne
     await session.commitTransaction();
     const userResponse = newUser.toObject();
     delete userResponse.password;
